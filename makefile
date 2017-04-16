@@ -3,7 +3,7 @@ CFLAGS=-march=native -O2 -pipe -Wall -Wextra -pedantic -std=c11
 BINARY=corund
 
 all: main.o
-	gcc main.o -o ${BINARY}
+	gcc main.o -o ${BINARY} -lSDL2
 
 main.o:
 	gcc -c ${CFLAGS} main.c
@@ -11,5 +11,5 @@ main.o:
 clean:
 	rm -f *.o
 
-dist-clean: clean
+distclean: clean
 	rm ${BINARY} 
