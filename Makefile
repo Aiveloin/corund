@@ -1,16 +1,16 @@
 MAKEFLAGS=
 CFLAGS=-march=native -O2 -pipe -Wall -Wextra -pedantic -std=c11
 BINARY=corund
-CC=musl-gcc
+CC=gcc
 
 all: main.o
-	${CC} main.o -o ${BINARY} -static
+	${CC} main.o -o ${BINARY} -lX11
 
 main.o:
-	${CC} -c ${CFLAGS} main.c
+	${CC} -mmusl -c ${CFLAGS} main.c
 
 clean:
-	rm -f *.o
+	rm -f *.o a.out
 
 distclean: clean
 	rm -f ${BINARY} 
