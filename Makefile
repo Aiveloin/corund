@@ -1,6 +1,5 @@
 MAKEFLAGS=
-#CFLAGS=-march=native -O2 -pipe -Wall -Wextra -pedantic -std=c11
-CFLAGS=-march=native -O2 -pipe
+CFLAGS=-march=native -O2 -pipe -Wall -Wextra -pedantic -std=c11
 BINARY=corund
 CC=gcc
 
