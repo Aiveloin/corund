@@ -4,7 +4,7 @@ BINARY=corund
 CC=gcc
 
 all: main.o
-	${CC} main.o -o ${BINARY} -lX11
+	${CC} main.o -o ${BINARY} -lX11 -lpng
 
 main.o:
 	${CC} -mmusl -c ${CFLAGS} main.c
