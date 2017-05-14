@@ -6,7 +6,7 @@ CC=gcc
 all: main.o
 	${CC} main.o -o ${BINARY} -lX11 -lpng
 
-main.o:
+main.o: main.c
 	${CC} -mmusl -c ${CFLAGS} main.c
 
 clean:
