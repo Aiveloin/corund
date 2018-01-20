@@ -127,7 +127,7 @@ image_t corundLoadPNG(corundString file_path)
 		// обработать 16 bit
 	}
 	/* Handle interlacing */
-	uint32_t number_of_passes = png_set_interlace_handling(png_ptr);
+	// uint32_t number_of_passes = png_set_interlace_handling(png_ptr);
 	png_read_update_info(png_ptr, info_ptr);
 	png_bytep row_pointers[height];
 	rgba_t * pixels = calloc(width*height, sizeof(rgba_t));
@@ -200,9 +200,8 @@ image_t corundRenderMesh(corundMesh Mesh)
 		/*
 			vertex3d: scene space (float)
 			vertex2d: screen space (float)
-			fragment: screen space (float)
-			pixel: bitmap space (int)
-			color: memory space (int)
+			fragment: screen space (float) // processed after producing - no fragment buffer
+			pixel: color array space (uint)
 		*/
 		/*rasterize triangle (x, y, z, w) => (x, y)*/
 
@@ -224,19 +223,22 @@ image_t corundRenderMesh(corundMesh Mesh)
 		}
 
 		/*upper part*/
-		float ydiff = Triangle[1].y - Triangle[0].y;
+		float ydiff1 = Triangle[1].y - Triangle[0].y;
+		float ydiff2 = Triangle[2].y - Triangle[0].y;
 
 		float xdiff1 = Triangle[1].x - Triangle[0].x;
 		float xdiff2 = Triangle[2].x - Triangle[0].x;
 
-		float xstep1 = xdiff1/ydiff;
-		float xstep2 = xdiff2/ydiff;
+		float xstep1 = xdiff1/ydiff1;
+		float xstep2 = xdiff2/ydiff2;
 
-		for (int y = 0; y < ydiff; y++) { // go along y-axis
-			float x1 = y * xstep1; // left
-			float x2 = y * xstep2; // right
+		Vertex v1 = {ydiff1 * xstep2 + Triangle[0].x, Triangle[1].y};
 
-			if (x1 > x2) {
+		for (int y = 0; y < ydiff1; y++) { // go along y-axis
+			float x1 = Triangle[0].x + y * xstep1; // left
+			float x2 = Triangle[0].x + y * xstep2; // right
+
+			if (x1 > x2) { // x1 всегда слева, x2 всегда справа
 				float swap = x1;
 				x1 = x2;
 				x2 = swap;
@@ -244,6 +246,39 @@ image_t corundRenderMesh(corundMesh Mesh)
 
 			for (int x = x1; x <= x2; x++) { // go along x-axis
 				float yreal = Triangle[0].y + y;
+				//float xreal = Triangle[0].x + x;
+				rgba_t color;
+				color.r = 255;
+				color.g = 255;
+				color.b = 255;
+				int offset = (int)yreal* Image.Width + x;
+				Image.Pixel[offset] = color;
+			}
+		}
+
+		/*lower part*/
+		ydiff1 = Triangle[2].y - Triangle[1].y;
+		ydiff2 = Triangle[2].y - v1.y;
+
+		xdiff1 = Triangle[2].x - Triangle[1].x;
+		xdiff2 = Triangle[2].x - v1.x;
+
+		xstep1 = xdiff1/ydiff1;
+		xstep2 = xdiff2/ydiff2;
+
+		for (int y = 0; y < ydiff1; y++) { // go along y-axis
+			float x1 = Triangle[1].x + y * xstep1; // left
+			float x2 = v1.x + y * xstep2; // right
+
+			if (x1 > x2) { // x1 всегда слева, x2 всегда справа
+				float swap = x1;
+				x1 = x2;
+				x2 = swap;
+			}
+
+			for (int x = x1; x <= x2; x++) { // go along x-axis
+				float yreal = Triangle[1].y + y;
+				//float xreal = Triangle[2].x + x;
 				rgba_t color;
 				color.r = 255;
 				color.g = 255;
@@ -290,8 +325,8 @@ int main(void)
 	/* TODO: test GCC features */
 
 	/* coords in screenspace - transform not done yet */
-	Vertex v1 = {0, 0};
-	Vertex v2 = {100, 100};
+	Vertex v1 = {400, 0};
+	Vertex v2 = {100, 400};
 	Vertex v3 = {400, 400};
 
 	Vertex * Geometry = calloc(3, sizeof(Vertex));
