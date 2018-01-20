@@ -1,3 +1,8 @@
+/*!
+	\file
+	\brief Main C code file for corund.
+*/
+
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -179,62 +184,75 @@ typedef VertexBuffer corundMesh;
 image_t corundRenderMesh(corundMesh Mesh)
 {
 	image_t Image;
+
 	Image.Width = corundDefaultWidth;
 	Image.Height = corundDefaultHeight;
 	Image.Pixel = calloc(Image.Height*Image.Width, sizeof(rgba_t));
+
 	if(!Image.Pixel) {
 		corundAbort("Cannot alloc framebuffer!");
 	}
-	for (int i = 0; i < Mesh.Count; i+=3)
-	{
-		/*create triangle*/
+
+	for (int i = 0; i < Mesh.Count; i+=3) { // loop over tris
+		/*build triangle*/
 		Vertex Triangle[3] = {Mesh.Geometry[i], Mesh.Geometry[i+1], Mesh.Geometry[i+2]};
+
+		/*
+			vertex3d: scene space (float)
+			vertex2d: screen space (float)
+			fragment: screen space (float)
+			pixel: bitmap space (int)
+			color: memory space (int)
+		*/
 		/*rasterize triangle (x, y, z, w) => (x, y)*/
+
 		/* sort vertices by vertical axis */
-		if (Triangle[1].y < Triangle[0].y)
-		{
+		if (Triangle[1].y < Triangle[0].y) {
 			Vertex Swap = Triangle[0];
 			Triangle[0] = Triangle[1];
 			Triangle[1] = Swap;
 		}
-		if (Triangle[2].y < Triangle[0].y)
-		{
+		if (Triangle[2].y < Triangle[0].y) {
 			Vertex Swap = Triangle[0];
 			Triangle[0] = Triangle[2];
 			Triangle[2] = Swap;
 		}
-		if (Triangle[2].y < Triangle[1].y)
-		{
+		if (Triangle[2].y < Triangle[1].y) {
 			Vertex Swap = Triangle[1];
 			Triangle[1] = Triangle[2];
 			Triangle[2] = Swap;
 		}
+
 		/*upper part*/
-		int ydiff = (int)Triangle[1].y - Triangle[0].y;
-		int xdiff1 = (int)Triangle[0].x - Triangle[1].x;
-		int xdiff2 = (int)Triangle[0].x - Triangle[2].x;
-		int xstep1 = xdiff1/ydiff; 		
-		int xstep2 = xdiff2/ydiff;
-		for (int y = 0; y < ydiff; y++)
-		{
-			int x1 = y * xstep1;
-			int x2 = y * xstep2;
-			if (x1 > x2)
-			{
-				int swap = x1;
+		float ydiff = Triangle[1].y - Triangle[0].y;
+
+		float xdiff1 = Triangle[1].x - Triangle[0].x;
+		float xdiff2 = Triangle[2].x - Triangle[0].x;
+
+		float xstep1 = xdiff1/ydiff;
+		float xstep2 = xdiff2/ydiff;
+
+		for (int y = 0; y < ydiff; y++) { // go along y-axis
+			float x1 = y * xstep1; // left
+			float x2 = y * xstep2; // right
+
+			if (x1 > x2) {
+				float swap = x1;
 				x1 = x2;
 				x2 = swap;
 			}
-			for (int x = x1; x <= x2; x++)
-			{
-				int yreal = Triangle[0].y + y;
+
+			for (int x = x1; x <= x2; x++) { // go along x-axis
+				float yreal = Triangle[0].y + y;
 				rgba_t color;
 				color.r = 255;
 				color.g = 255;
 				color.b = 255;
-				Image.Pixel[yreal*Image.Width+x] = color;
+				int offset = (int)yreal* Image.Width + x;
+				Image.Pixel[offset] = color;
 			}
 		}
+
 		/*per-fragment*/
 		/*interpolate u, v, color, etc.*/
 		/*blend color to framebuffer*/
@@ -270,20 +288,29 @@ int main(void)
 {
 	/* TODO: test PNG features */
 	/* TODO: test GCC features */
-	Vertex v1 = {100, 100};
-	Vertex v2 = {100, 400};
+
+	/* coords in screenspace - transform not done yet */
+	Vertex v1 = {0, 0};
+	Vertex v2 = {100, 100};
 	Vertex v3 = {400, 400};
+
 	Vertex * Geometry = calloc(3, sizeof(Vertex));
+
 	Geometry[0] = v1;
 	Geometry[1] = v2;
 	Geometry[2] = v3;
+
 	corundMesh Mesh = {3, Geometry};
+
 	image_t Render = corundRenderMesh(Mesh);
 	free(Geometry);
+
 	corundInit(corundDefaultWidth, corundDefaultHeight);
+
 	while (corundRun()) {
 		corundDrawImage(Render, 0, 0);
 	};
+
 	corundFreeImage(Render);
 	XCloseDisplay(d);
 	return EXIT_SUCCESS;
